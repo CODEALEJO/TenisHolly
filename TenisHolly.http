@@ -1,0 +1,6 @@
+@TenisHolly_HostAddress = http://localhost:5227
+
+GET {{TenisHolly_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
