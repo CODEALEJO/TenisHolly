@@ -108,6 +108,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://*:{port}");
 var app = builder.Build();
 
 
