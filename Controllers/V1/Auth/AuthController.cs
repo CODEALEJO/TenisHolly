@@ -46,7 +46,7 @@ namespace Assesment_Alejandro_Castrillon_Gomez_bernslee.Controllers.V1.Auth
             }
 
             // Validar que el rol sea uno de los roles válidos
-            var validRoles = new List<string> { "Admin", "Patient", "Doctor" };
+            var validRoles = new List<string> { "Admin", "User" };
             if (!validRoles.Contains(registerUserDto.Role))
             {
                 return BadRequest("Invalid role. Valid roles are Admin, Patient, Doctor.");
