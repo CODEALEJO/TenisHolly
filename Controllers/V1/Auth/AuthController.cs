@@ -23,9 +23,9 @@ namespace Assesment_Alejandro_Castrillon_Gomez_bernslee.Controllers.V1.Auth
         }
         [HttpPost("/api/v1/auth/register")]
         [SwaggerOperation(
-            Summary = "Register a new User",
-            Description = "Creates a new user record after validating the provided information and ensuring the email is not already in use."
-        )]
+     Summary = "Register a new User",
+     Description = "Creates a new user record after validating the provided information and ensuring the email is not already in use."
+ )]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto registerUserDto)
         {
             if (!ModelState.IsValid)
@@ -36,21 +36,17 @@ namespace Assesment_Alejandro_Castrillon_Gomez_bernslee.Controllers.V1.Auth
             // Verificar si el correo electrónico ya existe
             if (_context.Users.Any(u => u.Email == registerUserDto.Email))
             {
-                return BadRequest("Email already exists");
+                return BadRequest(new { message = "Email already exists" });
             }
 
             // Validar la longitud de la contraseña
             if (registerUserDto.PasswordHash.Length < 8)
             {
-                return BadRequest("Password must be at least 8 characters long.");
+                return BadRequest(new { message = "Password must be at least 8 characters long." });
             }
 
-            // Validar que el rol sea uno de los roles válidos
-            var validRoles = new List<string> { "Admin", "User" };
-            if (!validRoles.Contains(registerUserDto.Role))
-            {
-                return BadRequest("Invalid role. Valid roles are Admin, Patient, Doctor.");
-            }
+            // Asignar el rol por defecto "Admin" si no se proporciona
+            string role = string.IsNullOrEmpty(registerUserDto.Role) ? "Admin" : registerUserDto.Role;
 
             // Encriptar la contraseña usando BCrypt
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(registerUserDto.PasswordHash);
@@ -60,13 +56,23 @@ namespace Assesment_Alejandro_Castrillon_Gomez_bernslee.Controllers.V1.Auth
                 FullName = registerUserDto.FullName,
                 Email = registerUserDto.Email,
                 PasswordHash = passwordHash,
-                Role = registerUserDto.Role // Asignar el rol enviado en el DTO
+                Role = role
             };
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok("User registered successfully");
+            return Ok(new
+            {
+                message = "User registered successfully",
+                user = new
+                {
+                    id = user.Id,
+                    fullName = user.FullName,
+                    email = user.Email,
+                    role = user.Role
+                }
+            });
         }
 
         // Login endpoint
