@@ -12,4 +12,5 @@ public class LoanDTO
     public int Quantity { get; set; }
     public DateTime LoanDate { get; set; }
     public DateTime? ReturnDate { get; set; }
+    public string Sizes { get; set; }
 }

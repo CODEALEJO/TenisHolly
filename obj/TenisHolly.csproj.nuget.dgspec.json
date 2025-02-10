@@ -1,35 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\user-101\\OneDrive\\Escritorio\\programacionenpc\\TenisHolly\\TenisHolly.csproj": {}
+    "C:\\Users\\alejo\\OneDrive\\Escritorio\\Programacion\\TenisHolly\\TenisHolly.csproj": {}
   },
   "projects": {
-    "C:\\Users\\user-101\\OneDrive\\Escritorio\\programacionenpc\\TenisHolly\\TenisHolly.csproj": {
+    "C:\\Users\\alejo\\OneDrive\\Escritorio\\Programacion\\TenisHolly\\TenisHolly.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\user-101\\OneDrive\\Escritorio\\programacionenpc\\TenisHolly\\TenisHolly.csproj",
+        "projectUniqueName": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Programacion\\TenisHolly\\TenisHolly.csproj",
         "projectName": "TenisHolly",
-        "projectPath": "C:\\Users\\user-101\\OneDrive\\Escritorio\\programacionenpc\\TenisHolly\\TenisHolly.csproj",
-        "packagesPath": "C:\\Users\\user-101\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\user-101\\OneDrive\\Escritorio\\programacionenpc\\TenisHolly\\obj\\",
+        "projectPath": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Programacion\\TenisHolly\\TenisHolly.csproj",
+        "packagesPath": "C:\\Users\\alejo\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\alejo\\OneDrive\\Escritorio\\Programacion\\TenisHolly\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-        ],
         "configFilePaths": [
-          "C:\\Users\\user-101\\AppData\\Roaming\\NuGet\\NuGet.Config",
-          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config"
+          "C:\\Users\\alejo\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
-          "net8.0"
+          "net9.0"
         ],
         "sources": {
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net8.0": {
-            "targetAlias": "net8.0",
+          "net9.0": {
+            "targetAlias": "net9.0",
             "projectReferences": {}
           }
         },
@@ -42,11 +37,12 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.100"
       },
       "frameworks": {
-        "net8.0": {
-          "targetAlias": "net8.0",
+        "net9.0": {
+          "targetAlias": "net9.0",
           "dependencies": {
             "BCrypt.Net-Next": {
               "target": "Package",
@@ -102,7 +98,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.405/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

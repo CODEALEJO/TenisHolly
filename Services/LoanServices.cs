@@ -1,105 +1,129 @@
-// using System;
-// using System.Collections.Generic;
-// using System.Linq;
-// using System.Threading.Tasks;
-// using Microsoft.EntityFrameworkCore;
-// using TenisHolly.Data;
-// using TenisHolly.DTOs;
-// using TenisHolly.Interfaces;
-// using TenisHolly.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using TenisHolly.Data;
+using TenisHolly.DTOs;
+using TenisHolly.Interfaces;
+using TenisHolly.Models;
 
-// namespace TenisHolly.Services;
-// public class LoanService : ILoanInterface
-// {
-//     private readonly ApplicationDbContext _context;
+namespace TenisHolly.Services
+{
+    public class LoanService : ILoanInterface
+    {
+        private readonly ApplicationDbContext _context;
 
-//     public LoanService(ApplicationDbContext context)
-//     {
-//         _context = context;
-//     }
+        public LoanService(ApplicationDbContext context)
+        {
+            _context = context;
+        }
 
-//     // Lógica para gestionar solicitudes de préstamo
-//     public async Task RequestLoan(LoanDTO loan)
-//     {
-//         // Validar existencia del zapato en la tienda de origen
-//         var shoeInStore = await _context.Inventory
-//             .FirstOrDefaultAsync(i => i.StoreId == loan.FromStoreId && i.ShoeId == loan.ShoeId);
+        // Solicitar un préstamo
+        public async Task RequestLoanAsync(LoanDTO loanDto)
+        {
+            var loan = new Loan
+            {
+                ShoeId = loanDto.ShoeId,
+                FromStoreId = loanDto.FromStoreId,
+                ToStoreId = loanDto.ToStoreId,
+                Quantity = loanDto.Quantity,
+                LoanDate = loanDto.LoanDate,
+                ReturnDate = loanDto.ReturnDate,
+                Sizes = loanDto.Sizes,
+                Status = Loan.LoanStatus.Prestado
+            };
 
-//         if (shoeInStore == null || shoeInStore.Quantity < loan.Quantity)
-//         {
-//             throw new Exception("La tienda de origen no tiene suficiente stock del zapato solicitado.");
-//         }
+            _context.Loans.Add(loan);
+            await _context.SaveChangesAsync();
+        }
 
-//         // Restar el stock en la tienda de origen
-//         shoeInStore.Quantity -= loan.Quantity;
+        // Aprobar un préstamo
+        public async Task ApproveLoanAsync(int loanId)
+        {
+            var loan = await _context.Loans.FindAsync(loanId);
+            if (loan == null) throw new KeyNotFoundException("Loan not found.");
 
-//         // Verificar si el zapato ya existe en la tienda de destino
-//         var shoeInDestination = await _context.Inventory
-//             .FirstOrDefaultAsync(i => i.StoreId == loan.ToStoreId && i.ShoeId == loan.ShoeId);
+            // Verificar inventario en la tienda de destino
+            var inventory = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ShoeId == loan.ShoeId && i.StoreId == loan.ToStoreId);
 
-//         if (shoeInDestination == null)
-//         {
-//             // Si no existe, crear un nuevo registro en el inventario de la tienda de destino
-//             _context.Inventory.Add(new Inventory
-//             {
-//                 StoreId = loan.ToStoreId,
-//                 ShoeId = loan.ShoeId,
-//                 Quantity = loan.Quantity
-//             });
-//         }
-//         else
-//         {
-//             // Si ya existe, incrementar el stock
-//             shoeInDestination.Quantity += loan.Quantity;
-//         }
+            if (inventory == null)
+            {
+                inventory = new Inventory
+                {
+                    ShoeId = loan.ShoeId,
+                    StoreId = loan.ToStoreId,
+                    Quantity = loan.Quantity
+                };
+                _context.Inventories.Add(inventory);
+            }
+            else
+            {
+                inventory.Quantity += loan.Quantity;
+                _context.Inventories.Update(inventory);
+            }
 
-//         // Registrar el préstamo
-//         var newLoan = new Loan
-//         {
-//             ShoeId = loan.ShoeId,
-//             FromStoreId = loan.FromStoreId,
-//             ToStoreId = loan.ToStoreId,
-//             Quantity = loan.Quantity,
-//             LoanDate = DateTime.UtcNow
-//         };
+            // Restar del inventario de la tienda de origen
+            var fromInventory = await _context.Inventories
+                .FirstOrDefaultAsync(i => i.ShoeId == loan.ShoeId && i.StoreId == loan.FromStoreId);
 
-//         _context.Loans.Add(newLoan);
+            if (fromInventory == null || fromInventory.Quantity < loan.Quantity)
+            {
+                throw new InvalidOperationException("Not enough stock to transfer.");
+            }
 
-//         // Guardar los cambios en la base de datos
-//         await _context.SaveChangesAsync();
-//     }
+            fromInventory.Quantity -= loan.Quantity;
+            _context.Inventories.Update(fromInventory);
 
-//     // Obtener préstamos realizados por una tienda específica
-//     public async Task<List<LoanDTO>> GetLoansByStore(int storeId)
-//     {
-//         return await _context.Loans
-//             .Where(l => l.FromStoreId == storeId || l.ToStoreId == storeId)
-//             .Select(l => new LoanDTO
-//             {
-//                 ShoeId = l.ShoeId,
-//                 FromStoreId = l.FromStoreId,
-//                 ToStoreId = l.ToStoreId,
-//                 Quantity = l.Quantity,
-//                 LoanDate = l.LoanDate
-//             })
-//             .ToListAsync();
-//     }
+            // Cambiar estado del préstamo
+            loan.Status = Loan.LoanStatus.Pago;
+            _context.Loans.Update(loan);
 
-//     // Crear un préstamo directamente (sin validaciones complejas)
-//     public async Task<LoanDTO> CreateLoanAsync(LoanDTO loanDto)
-//     {
-//         var loan = new Loan
-//         {
-//             ShoeId = loanDto.ShoeId,
-//             FromStoreId = loanDto.FromStoreId,
-//             ToStoreId = loanDto.ToStoreId,
-//             Quantity = loanDto.Quantity,
-//             LoanDate = loanDto.LoanDate
-//         };
+            await _context.SaveChangesAsync();
+        }
 
-//         _context.Loans.Add(loan);
-//         await _context.SaveChangesAsync();
+        // Cancelar un préstamo
+        public async Task CancelLoanAsync(int loanId)
+        {
+            var loan = await _context.Loans.FindAsync(loanId);
+            if (loan == null) throw new KeyNotFoundException("Loan not found.");
 
-//         return loanDto;
-//     }
-// }
+            _context.Loans.Remove(loan);
+            await _context.SaveChangesAsync();
+        }
+
+        // Obtener todos los préstamos
+        public async Task<List<LoanDTO>> GetAllLoansAsync()
+        {
+            return await _context.Loans.Select(l => new LoanDTO
+            {
+                ShoeId = l.ShoeId,
+                FromStoreId = l.FromStoreId,
+                ToStoreId = l.ToStoreId,
+                Quantity = l.Quantity,
+                LoanDate = l.LoanDate,
+                ReturnDate = l.ReturnDate,
+                Sizes = l.Sizes
+            }).ToListAsync();
+        }
+
+        // Obtener préstamo por ID
+        public async Task<LoanDTO> GetLoanByIdAsync(int loanId)
+        {
+            var loan = await _context.Loans.FindAsync(loanId);
+            if (loan == null) throw new KeyNotFoundException("Loan not found.");
+
+            return new LoanDTO
+            {
+                ShoeId = loan.ShoeId,
+                FromStoreId = loan.FromStoreId,
+                ToStoreId = loan.ToStoreId,
+                Quantity = loan.Quantity,
+                LoanDate = loan.LoanDate,
+                ReturnDate = loan.ReturnDate,
+                Sizes = loan.Sizes
+            };
+        }
+    }
+}

@@ -1,11 +1,12 @@
 {
   "Version": 1,
-  "Hash": "UM4zJ6k2KSzw0KGEEZss6FCUYIHrIJttnw6M8NMmCQo=",
+  "Hash": "43q8VNaN0vYDZfXP57Ow4+gklHIzesxAc6s1gAETTgw=",
   "Source": "TenisHolly",
   "BasePath": "_content/TenisHolly",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
   "DiscoveryPatterns": [],
-  "Assets": []
+  "Assets": [],
+  "Endpoints": []
 }
