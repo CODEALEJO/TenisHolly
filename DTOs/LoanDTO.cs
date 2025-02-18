@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace TenisHolly.DTOs;
 public class LoanDTO
-{
-    public int ShoeId { get; set; }
-    public int FromStoreId { get; set; }
-    public int ToStoreId { get; set; }
-    public int Quantity { get; set; }
-    public DateTime LoanDate { get; set; }
-    public DateTime? ReturnDate { get; set; }
-    public string Sizes { get; set; }
-}
+    {
+        public int ShoeId { get; set; }
+        public int FromStoreId { get; set; }
+        public int ToStoreId { get; set; }
+        public int Quantity { get; set; }
+        public DateTime LoanDate { get; set; }
+        public DateTime? ReturnDate { get; set; }
+        public List<SizeDetailDTO> Sizes { get; set; }
+    }

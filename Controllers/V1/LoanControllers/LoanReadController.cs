@@ -19,10 +19,8 @@ namespace TenisHolly.Controllers.V1.LoanControllers
         /// <response code="200">Loans retrieved successfully.</response>
         /// <response code="500">Internal server error.</response>
         [HttpGet]
-        [SwaggerOperation(Summary = "Get all loans", Description = "Retrieves a list of all loans.")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(500)]
-        public async Task<IActionResult> GetAllLoansAsync()
+        [SwaggerOperation(Summary = "Get all loans", Description = "Retrieve all loans in the system.")]
+        public async Task<ActionResult<IEnumerable<LoanDTO>>> GetAllLoans()
         {
             try
             {
@@ -31,10 +29,9 @@ namespace TenisHolly.Controllers.V1.LoanControllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"An error occurred: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
         /// <summary>
         /// Get a loan by ID.
         /// </summary>

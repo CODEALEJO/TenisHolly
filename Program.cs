@@ -67,7 +67,7 @@ builder.Services.AddScoped<IShoeInterface, ShoeService>();
 builder.Services.AddScoped<IStoreInterface, StoreServices>();
 builder.Services.AddScoped<IUserInterface, UserServices>();
 builder.Services.AddScoped<ILoanInterface, LoanService>();
-
+builder.Services.AddLogging();
 
 
 

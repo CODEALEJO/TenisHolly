@@ -14,7 +14,7 @@ namespace TenisHolly.Controllers.V1.LoanControllers
     {
         public LoanCreateController(ILoanInterface loanInterface) : base(loanInterface) { }
 
-            /// <summary>
+        /// <summary>
         /// Solicita un nuevo préstamo de zapatos entre tiendas.
         /// </summary>
         /// <param name="loanDto">Datos del préstamo a solicitar.</param>
@@ -23,17 +23,22 @@ namespace TenisHolly.Controllers.V1.LoanControllers
         /// <response code="400">Datos inválidos</response>
         [HttpPost("request")]
         [SwaggerOperation(Summary = "Request a loan", Description = "Create a store-to-store shoe loan application.")]
-        [ProducesResponseType(typeof(LoanDTO), 201)]
-        [ProducesResponseType(400)]
-        public async Task<IActionResult> RequestLoanAsync([FromBody] LoanDTO loanDto)
+        public async Task<ActionResult<LoanResponseDTO>> RequestLoanAsync([FromBody] LoanDTO loanDto)
         {
-            if (loanDto == null)
+            if (loanDto == null || !ModelState.IsValid)
             {
-                return BadRequest("The loan data is invalid.");
+                return BadRequest("Invalid loan data.");
             }
 
-            await _loanInterface.RequestLoanAsync(loanDto);
-            return CreatedAtAction(nameof(RequestLoanAsync), new { loanDto.ShoeId }, loanDto);
+            try
+            {
+                var response = await _loanInterface.RequestLoanAsync(loanDto);
+                return Created("", response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
     }
 }

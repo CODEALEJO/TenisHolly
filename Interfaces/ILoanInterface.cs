@@ -7,9 +7,10 @@ using TenisHolly.DTOs;
 namespace TenisHolly.Interfaces;
 public interface ILoanInterface
 {
-    Task RequestLoanAsync(LoanDTO loanDto);
+    Task<LoanResponseDTO> RequestLoanAsync(LoanDTO loanDto);
     Task ApproveLoanAsync(int loanId);
-    Task<List<LoanDTO>> GetAllLoansAsync();
-    Task<LoanDTO> GetLoanByIdAsync(int loanId);
+    Task<List<LoanResponseDTO>> GetAllLoansAsync();
+    Task<LoanResponseDTO> GetLoanByIdAsync(int loanId);
     Task CancelLoanAsync(int loanId);
+
 }

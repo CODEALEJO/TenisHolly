@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TenisHolly.Data;
 using TenisHolly.DTOs;
+using TenisHolly.Helpers;
 using TenisHolly.Interfaces;
 using TenisHolly.Models;
 
@@ -13,75 +13,93 @@ namespace TenisHolly.Services
     public class LoanService : ILoanInterface
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<LoanService> _logger;
 
-        public LoanService(ApplicationDbContext context)
+        public LoanService(
+            ApplicationDbContext context,
+            ILogger<LoanService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         // Solicitar un préstamo
-        public async Task RequestLoanAsync(LoanDTO loanDto)
+        public async Task<LoanResponseDTO> RequestLoanAsync(LoanDTO loanDto)
         {
-            var loan = new Loan
+            try
             {
-                ShoeId = loanDto.ShoeId,
-                FromStoreId = loanDto.FromStoreId,
-                ToStoreId = loanDto.ToStoreId,
-                Quantity = loanDto.Quantity,
-                LoanDate = loanDto.LoanDate,
-                ReturnDate = loanDto.ReturnDate,
-                Sizes = loanDto.Sizes,
-                Status = Loan.LoanStatus.Prestado
-            };
+                // Convertir la lista de SizeDetailDTO a string para guardar en la BD
+                var sizesString = JsonSerializer.Serialize(loanDto.Sizes);
 
-            _context.Loans.Add(loan);
-            await _context.SaveChangesAsync();
+                var loan = new Loan
+                {
+                    ShoeId = loanDto.ShoeId,
+                    FromStoreId = loanDto.FromStoreId,
+                    ToStoreId = loanDto.ToStoreId,
+                    Quantity = loanDto.Quantity,
+                    LoanDate = loanDto.LoanDate,
+                    ReturnDate = loanDto.ReturnDate,
+                    Sizes = sizesString, // Guardamos como JSON string
+                    Status = Loan.LoanStatus.Prestado
+                };
+
+                _context.Loans.Add(loan);
+                await _context.SaveChangesAsync();
+
+                var loanWithDetails = await _context.Loans
+                    .Include(l => l.Shoe)
+                    .Include(l => l.FromStore)
+                    .Include(l => l.ToStore)
+                    .FirstOrDefaultAsync(l => l.Id == loan.Id);
+
+                return new LoanResponseDTO
+                {
+                    ShoeReference = loanWithDetails.Shoe.Reference,
+                    FromStoreName = loanWithDetails.FromStore.Name,
+                    ToStoreName = loanWithDetails.ToStore.Name,
+                    Quantity = loanWithDetails.Quantity,
+                    LoanDate = loanWithDetails.LoanDate,
+                    ReturnDate = loanWithDetails.ReturnDate,
+                    Sizes = loanDto.Sizes,
+                    Status = loanWithDetails.Status.ToString()
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("An error occurred while requesting the loan.", ex);
+            }
         }
 
         // Aprobar un préstamo
         public async Task ApproveLoanAsync(int loanId)
         {
-            var loan = await _context.Loans.FindAsync(loanId);
+            var loan = await _context.Loans.SingleOrDefaultAsync(l => l.Id == loanId);
             if (loan == null) throw new KeyNotFoundException("Loan not found.");
 
-            // Verificar inventario en la tienda de destino
-            var inventory = await _context.Inventories
-                .FirstOrDefaultAsync(i => i.ShoeId == loan.ShoeId && i.StoreId == loan.ToStoreId);
+            var inventory = await _context.Inventories.SingleOrDefaultAsync(i => i.ShoeId == loan.ShoeId && i.StoreId == loan.ToStoreId);
 
-            if (inventory == null)
+            inventory ??= new Inventory
             {
-                inventory = new Inventory
-                {
-                    ShoeId = loan.ShoeId,
-                    StoreId = loan.ToStoreId,
-                    Quantity = loan.Quantity
-                };
-                _context.Inventories.Add(inventory);
-            }
-            else
-            {
-                inventory.Quantity += loan.Quantity;
-                _context.Inventories.Update(inventory);
-            }
+                ShoeId = loan.ShoeId,
+                StoreId = loan.ToStoreId,
+                Quantity = 0
+            };
 
-            // Restar del inventario de la tienda de origen
-            var fromInventory = await _context.Inventories
-                .FirstOrDefaultAsync(i => i.ShoeId == loan.ShoeId && i.StoreId == loan.FromStoreId);
+            var fromInventory = await _context.Inventories.SingleOrDefaultAsync(i => i.ShoeId == loan.ShoeId && i.StoreId == loan.FromStoreId);
 
             if (fromInventory == null || fromInventory.Quantity < loan.Quantity)
             {
                 throw new InvalidOperationException("Not enough stock to transfer.");
             }
 
+            inventory.Quantity += loan.Quantity;
             fromInventory.Quantity -= loan.Quantity;
-            _context.Inventories.Update(fromInventory);
 
-            // Cambiar estado del préstamo
             loan.Status = Loan.LoanStatus.Pago;
-            _context.Loans.Update(loan);
 
             await _context.SaveChangesAsync();
         }
+
 
         // Cancelar un préstamo
         public async Task CancelLoanAsync(int loanId)
@@ -94,35 +112,57 @@ namespace TenisHolly.Services
         }
 
         // Obtener todos los préstamos
-        public async Task<List<LoanDTO>> GetAllLoansAsync()
+        public async Task<List<LoanResponseDTO>> GetAllLoansAsync()
         {
-            return await _context.Loans.Select(l => new LoanDTO
+            try
             {
-                ShoeId = l.ShoeId,
-                FromStoreId = l.FromStoreId,
-                ToStoreId = l.ToStoreId,
-                Quantity = l.Quantity,
-                LoanDate = l.LoanDate,
-                ReturnDate = l.ReturnDate,
-                Sizes = l.Sizes
-            }).ToListAsync();
+                var loans = await _context.Loans
+                    .Include(l => l.Shoe)
+                    .Include(l => l.FromStore)
+                    .Include(l => l.ToStore)
+                    .ToListAsync();
+
+                return loans.Select(l => new LoanResponseDTO
+                {
+                    ShoeReference = l.Shoe.Reference,
+                    FromStoreName = l.FromStore.Name,
+                    ToStoreName = l.ToStore.Name,
+                    Quantity = l.Quantity,
+                    LoanDate = l.LoanDate,
+                    ReturnDate = l.ReturnDate,
+                    Sizes = JsonHelper.ParseSizes(l.Sizes),
+                    Status = l.Status.ToString()
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all loans");
+                throw new Exception("An error occurred while retrieving loans", ex);
+            }
         }
 
+
         // Obtener préstamo por ID
-        public async Task<LoanDTO> GetLoanByIdAsync(int loanId)
+        public async Task<LoanResponseDTO> GetLoanByIdAsync(int loanId)
         {
-            var loan = await _context.Loans.FindAsync(loanId);
+            var loan = await _context.Loans
+                .Include(l => l.Shoe)
+                .Include(l => l.FromStore)
+                .Include(l => l.ToStore)
+                .FirstOrDefaultAsync(l => l.Id == loanId);
+
             if (loan == null) throw new KeyNotFoundException("Loan not found.");
 
-            return new LoanDTO
+            return new LoanResponseDTO
             {
-                ShoeId = loan.ShoeId,
-                FromStoreId = loan.FromStoreId,
-                ToStoreId = loan.ToStoreId,
+                ShoeReference = loan.Shoe.Reference,
+                FromStoreName = loan.FromStore.Name,
+                ToStoreName = loan.ToStore.Name,
                 Quantity = loan.Quantity,
                 LoanDate = loan.LoanDate,
                 ReturnDate = loan.ReturnDate,
-                Sizes = loan.Sizes
+                Sizes = JsonHelper.ParseSizes(loan.Sizes),
+                Status = loan.Status.ToString()
             };
         }
     }
